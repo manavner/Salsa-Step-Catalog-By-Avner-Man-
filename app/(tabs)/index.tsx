@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Volume2, Play, Filter, Mail, User, ArrowRight, CircleCheck as CheckCircle, Database } from 'lucide-react-native';
+import { Heart } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 import { StepCard } from '@/components/StepCard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -50,6 +51,7 @@ export default function HomeScreen() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [showDonationMessage, setShowDonationMessage] = useState(false);
   const { isConnected } = useSupabaseConnection();
 
   useEffect(() => {
@@ -177,6 +179,14 @@ export default function HomeScreen() {
     }
   };
 
+  const handleDonation = () => {
+    const donationUrl = 'https://www.paypal.com/donate/?business=avner.man@example.com&currency_code=USD';
+    Linking.openURL(donationUrl).catch(() => {
+      setShowDonationMessage(true);
+      setTimeout(() => setShowDonationMessage(false), 3000);
+    });
+  };
+
   const updateRegistrationField = (field: 'name' | 'email', value: string) => {
     setRegistrationData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
@@ -296,6 +306,24 @@ export default function HomeScreen() {
             <Text style={styles.privacyText}>
               We respect your privacy. Your information will only be used for salsa-related updates.
             </Text>
+
+            <View style={styles.donationSection}>
+              <Text style={styles.donationText}>
+                Love this app? Support the creator!
+              </Text>
+              <TouchableOpacity 
+                style={styles.donationButton}
+                onPress={handleDonation}
+              >
+                <Heart size={16} color="#FF6B6B" />
+                <Text style={styles.donationButtonText}>Buy me a coffee</Text>
+              </TouchableOpacity>
+              {showDonationMessage && (
+                <Text style={styles.donationMessage}>
+                  Thank you for your support! ❤️
+                </Text>
+              )}
+            </View>
           </View>
         </View>
       )}
@@ -522,6 +550,42 @@ const styles = StyleSheet.create({
     color: '#B3B3B3',
     textAlign: 'center',
     lineHeight: 16,
+  },
+  donationSection: {
+    alignItems: 'center',
+    marginTop: 24,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#3A3A3A',
+    gap: 12,
+  },
+  donationText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#B3B3B3',
+    textAlign: 'center',
+  },
+  donationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2A2A2A',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FF6B6B',
+    gap: 8,
+  },
+  donationButtonText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: '#FF6B6B',
+  },
+  donationMessage: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    color: '#1DB954',
+    textAlign: 'center',
   },
   filtersContainer: {
     paddingVertical: 8,
