@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Volume2, Play, Filter, Mail, User, ArrowRight, CheckCircle } from 'lucide-react-native';
+import { Volume2, Play, Filter, Mail, User, ArrowRight, CircleCheck as CheckCircle } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 import { StepCard } from '@/components/StepCard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
