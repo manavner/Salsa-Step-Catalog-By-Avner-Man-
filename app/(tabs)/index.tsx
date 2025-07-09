@@ -8,9 +8,11 @@ import {
   ActivityIndicator,
   Linking,
   Platform,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Volume2, Play, Filter } from 'lucide-react-native';
+import { Volume2, Play, Filter, Mail, User, ArrowRight, CheckCircle } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 import { StepCard } from '@/components/StepCard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -34,6 +36,16 @@ export default function HomeScreen() {
   const [selectedLevel, setSelectedLevel] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [showWelcome, setShowWelcome] = useState(true);
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [registrationData, setRegistrationData] = useState({
+    name: '',
+    email: '',
+  });
+  const [registrationErrors, setRegistrationErrors] = useState({
+    name: '',
+    email: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchSteps();
@@ -93,7 +105,66 @@ export default function HomeScreen() {
   };
 
   const handleDismissWelcome = () => {
+    setShowRegistration(true);
     setShowWelcome(false);
+  };
+
+  const handleSkipRegistration = () => {
+    setShowRegistration(false);
+  };
+
+  const validateForm = () => {
+    const errors = { name: '', email: '' };
+    let isValid = true;
+
+    if (!registrationData.name.trim()) {
+      errors.name = 'Name is required';
+      isValid = false;
+    }
+
+    if (registrationData.email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(registrationData.email)) {
+        errors.email = 'Please enter a valid email address';
+        isValid = false;
+      }
+    }
+
+    setRegistrationErrors(errors);
+    return isValid;
+  };
+
+  const handleRegistrationSubmit = async () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Here you would typically send the data to your backend
+      console.log('Registration data:', registrationData);
+      
+      // Show success and continue to app
+      Alert.alert(
+        'Registration Successful!',
+        `Thank you ${registrationData.name}! ${registrationData.email ? 'We\'ll keep you updated.' : 'Welcome to the salsa community!'}`,
+        [{ text: 'Continue', onPress: () => setShowRegistration(false) }]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const updateRegistrationField = (field: 'name' | 'email', value: string) => {
+    setRegistrationData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (registrationErrors[field]) {
+      setRegistrationErrors(prev => ({ ...prev, [field]: '' }));
+    }
   };
 
   if (loading) {
@@ -117,7 +188,88 @@ export default function HomeScreen() {
         </View>
       )}
       
-      {!showWelcome && (
+      {showRegistration && (
+        <View style={styles.registrationContainer}>
+          <View style={styles.registrationCard}>
+            <View style={styles.registrationHeader}>
+              <Text style={styles.registrationTitle}>Join the Salsa Community</Text>
+              <Text style={styles.registrationSubtitle}>
+                Get updates on new steps and salsa tips (optional)
+              </Text>
+            </View>
+
+            <View style={styles.formContainer}>
+              <View style={styles.inputContainer}>
+                <View style={styles.inputWrapper}>
+                  <User size={20} color="#B3B3B3" style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, registrationErrors.name && styles.inputError]}
+                    placeholder="Your name *"
+                    placeholderTextColor="#B3B3B3"
+                    value={registrationData.name}
+                    onChangeText={(text) => updateRegistrationField('name', text)}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                  />
+                </View>
+                {registrationErrors.name ? (
+                  <Text style={styles.errorText}>{registrationErrors.name}</Text>
+                ) : null}
+              </View>
+
+              <View style={styles.inputContainer}>
+                <View style={styles.inputWrapper}>
+                  <Mail size={20} color="#B3B3B3" style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, registrationErrors.email && styles.inputError]}
+                    placeholder="Email address (optional)"
+                    placeholderTextColor="#B3B3B3"
+                    value={registrationData.email}
+                    onChangeText={(text) => updateRegistrationField('email', text)}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+                {registrationErrors.email ? (
+                  <Text style={styles.errorText}>{registrationErrors.email}</Text>
+                ) : null}
+              </View>
+            </View>
+
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity 
+                style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+                onPress={handleRegistrationSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Text style={styles.submitButtonText}>Continue</Text>
+                    <ArrowRight size={20} color="#FFFFFF" />
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.skipButton}
+                onPress={handleSkipRegistration}
+                disabled={isSubmitting}
+              >
+                <Text style={styles.skipButtonText}>Skip for now</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.privacyText}>
+              We respect your privacy. Your information will only be used for salsa-related updates.
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {!showWelcome && !showRegistration && (
         <>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Salsa Steps</Text>
@@ -226,6 +378,112 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     fontSize: 14,
     color: '#B3B3B3',
+  },
+  registrationContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  registrationCard: {
+    backgroundColor: '#2A2A2A',
+    borderRadius: 20,
+    padding: 32,
+    width: '100%',
+    maxWidth: 400,
+    borderWidth: 1,
+    borderColor: '#3A3A3A',
+  },
+  registrationHeader: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  registrationTitle: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 24,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  registrationSubtitle: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    color: '#B3B3B3',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  formContainer: {
+    gap: 20,
+    marginBottom: 32,
+  },
+  inputContainer: {
+    gap: 8,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#191414',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#3A3A3A',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    color: '#FFFFFF',
+    paddingVertical: 0,
+  },
+  inputError: {
+    borderColor: '#FF6B6B',
+  },
+  errorText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#FF6B6B',
+    marginLeft: 4,
+  },
+  buttonContainer: {
+    gap: 16,
+    marginBottom: 24,
+  },
+  submitButton: {
+    backgroundColor: '#1DB954',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
+  submitButtonText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  skipButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  skipButtonText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    color: '#B3B3B3',
+  },
+  privacyText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: '#B3B3B3',
+    textAlign: 'center',
+    lineHeight: 16,
   },
   filtersContainer: {
     paddingVertical: 8,
