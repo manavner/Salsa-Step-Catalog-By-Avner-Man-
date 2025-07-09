@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Volume2, Play, Filter, Mail, User, ArrowRight, CircleCheck as CheckCircle, Database } from 'lucide-react-native';
+import { Volume2, Play, Filter, Mail, User, ArrowRight, CircleCheck as CheckCircle, Database, X } from 'lucide-react-native';
 import { Heart } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 import { StepCard } from '@/components/StepCard';
@@ -187,6 +187,26 @@ export default function HomeScreen() {
     });
   };
 
+  const handleExit = () => {
+    if (Platform.OS === 'web') {
+      // For web, close the current tab/window
+      window.close();
+    } else {
+      // For mobile, you could implement app backgrounding or show exit confirmation
+      Alert.alert(
+        'Exit App',
+        'Are you sure you want to exit?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Exit', onPress: () => {
+            // On mobile, you might want to minimize or background the app
+            // This is a placeholder for mobile-specific exit logic
+          }}
+        ]
+      );
+    }
+  };
+
   const updateRegistrationField = (field: 'name' | 'email', value: string) => {
     setRegistrationData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
@@ -331,8 +351,18 @@ export default function HomeScreen() {
       {!showWelcome && !showRegistration && (
         <>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Salsa Steps</Text>
-            <Text style={styles.headerSubtitle}>{filteredSteps.length} steps available</Text>
+            <View style={styles.headerContent}>
+              <View>
+                <Text style={styles.headerTitle}>Salsa Steps</Text>
+                <Text style={styles.headerSubtitle}>{filteredSteps.length} steps available</Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.exitButton}
+                onPress={handleExit}
+              >
+                <X size={20} color="#B3B3B3" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <SearchBar
@@ -427,6 +457,11 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 10,
   },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
   headerTitle: {
     fontFamily: 'Inter-Bold',
     fontSize: 28,
@@ -437,6 +472,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     fontSize: 14,
     color: '#B3B3B3',
+  },
+  exitButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#2A2A2A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#3A3A3A',
   },
   registrationContainer: {
     flex: 1,
