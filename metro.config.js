@@ -2,13 +2,18 @@ const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
-// Add resolver alias for react-dom to use client entry point
-config.resolver.alias = {
-  ...config.resolver.alias,
-  'react-dom': 'react-dom/client',
-};
-
-// Ensure proper module resolution for web
+// Ensure proper platform resolution
 config.resolver.platforms = ['web', 'native', 'ios', 'android'];
+
+// Add support for additional asset extensions
+config.resolver.assetExts.push('db', 'mp3', 'ttf', 'obj', 'png', 'jpg');
+
+// Configure transformer for better web compatibility
+config.transformer.minifierConfig = {
+  keep_fnames: true,
+  mangle: {
+    keep_fnames: true,
+  },
+};
 
 module.exports = config;
