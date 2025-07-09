@@ -12,12 +12,15 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Volume2, Play, Filter, Mail, User, ArrowRight, CircleCheck as CheckCircle } from 'lucide-react-native';
+import { Volume2, Play, Filter, Mail, User, ArrowRight, CircleCheck as CheckCircle, Database } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 import { StepCard } from '@/components/StepCard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { FilterButton } from '@/components/FilterButton';
 import { SearchBar } from '@/components/SearchBar';
+import { ConnectionStatus } from '@/components/ConnectionStatus';
+import { RegistrationService, type RegistrationData } from '@/services/registrationService';
+import { useSupabaseConnection } from '@/hooks/useSupabaseConnection';
 
 interface SalsaStep {
   level: string;
@@ -46,6 +49,8 @@ export default function HomeScreen() {
     email: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const { isConnected } = useSupabaseConnection();
 
   useEffect(() => {
     fetchSteps();
@@ -137,23 +142,36 @@ export default function HomeScreen() {
   const handleRegistrationSubmit = async () => {
     if (!validateForm()) return;
 
+    if (!isConnected) {
+      Alert.alert('Connection Error', 'Unable to connect to the database. Please check your connection and try again.');
+      return;
+    }
+
     setIsSubmitting(true);
     
-    // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Here you would typically send the data to your backend
-      console.log('Registration data:', registrationData);
-      
-      // Show success and continue to app
-      Alert.alert(
-        'Registration Successful!',
-        `Thank you ${registrationData.name}! ${registrationData.email ? 'We\'ll keep you updated.' : 'Welcome to the salsa community!'}`,
-        [{ text: 'Continue', onPress: () => setShowRegistration(false) }]
-      );
+      const result = await RegistrationService.registerUser({
+        name: registrationData.name,
+        email: registrationData.email || undefined,
+      });
+
+      if (result.success) {
+        setRegistrationSuccess(true);
+        
+        // Show success message and continue after a brief delay
+        setTimeout(() => {
+          Alert.alert(
+            'Registration Successful!',
+            `Thank you ${registrationData.name}! ${registrationData.email ? 'We\'ll keep you updated.' : 'Welcome to the salsa community!'}`,
+            [{ text: 'Continue', onPress: () => setShowRegistration(false) }]
+          );
+        }, 500);
+      } else {
+        Alert.alert('Registration Failed', result.error || 'Something went wrong. Please try again.');
+      }
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      console.error('Registration error:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -191,6 +209,10 @@ export default function HomeScreen() {
       {showRegistration && (
         <View style={styles.registrationContainer}>
           <View style={styles.registrationCard}>
+            <View style={styles.connectionStatusContainer}>
+              <ConnectionStatus />
+            </View>
+            
             <View style={styles.registrationHeader}>
               <Text style={styles.registrationTitle}>Join the Salsa Community</Text>
               <Text style={styles.registrationSubtitle}>
@@ -239,12 +261,21 @@ export default function HomeScreen() {
 
             <View style={styles.buttonContainer}>
               <TouchableOpacity 
-                style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+                style={[
+                  styles.submitButton, 
+                  (isSubmitting || !isConnected) && styles.submitButtonDisabled,
+                  registrationSuccess && styles.submitButtonSuccess
+                ]}
                 onPress={handleRegistrationSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !isConnected}
               >
                 {isSubmitting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : registrationSuccess ? (
+                  <>
+                    <CheckCircle size={20} color="#FFFFFF" />
+                    <Text style={styles.submitButtonText}>Success!</Text>
+                  </>
                 ) : (
                   <>
                     <Text style={styles.submitButtonText}>Continue</Text>
@@ -256,7 +287,7 @@ export default function HomeScreen() {
               <TouchableOpacity 
                 style={styles.skipButton}
                 onPress={handleSkipRegistration}
-                disabled={isSubmitting}
+                disabled={isSubmitting || registrationSuccess}
               >
                 <Text style={styles.skipButtonText}>Skip for now</Text>
               </TouchableOpacity>
@@ -394,6 +425,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#3A3A3A',
   },
+  connectionStatusContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
   registrationHeader: {
     alignItems: 'center',
     marginBottom: 32,
@@ -463,6 +498,9 @@ const styles = StyleSheet.create({
   },
   submitButtonDisabled: {
     opacity: 0.6,
+  },
+  submitButtonSuccess: {
+    backgroundColor: '#1DB954',
   },
   submitButtonText: {
     fontFamily: 'Inter-SemiBold',
